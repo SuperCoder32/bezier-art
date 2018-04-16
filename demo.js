@@ -1,35 +1,21 @@
-class Vector {
-	constructor(x = 0, y = 0){
-		this.x = x;
-		this.y = y;
-	}
-	add(vec2){
-		return new Vector(this.x + vec2.x, this.y + vec2.y);
-	}
-	substract(vec2){
-		return new Vector(this.x - vec2.x, this.y - vec2.y);
-	}
-	multiply(t){
-		return new Vector(this.x * t, this.y * t);
-	}
 
-	static lerp(a, b, f){
-		return a.add((b.substract(a).multiply(f)));
-	}
-	static quadraticCurve(a,b,c,f){
-		var p0 = Vector.lerp(a,b,f);
-		var p1 = Vector.lerp(b,c,f);
-		return Vector.lerp(p0,p1,f);
-	}
-	static cubicCurve(a,b,c,d,f){
-		var p0 = Vector.quadraticCurve(a,b,c,f);
-		var p1 = Vector.quadraticCurve(b,c,d,f);
-		return Vector.lerp(p0,p1,f);
-	}
-	length() {
-		return Math.sqrt(this.x * this.x + this.y * this.y);
-	}
+function lerp(a, b, f){
+	return a.add((b.substract(a).multiply(f)));
 }
+
+function quadraticCurve(a,b,c,f){
+	var p0 = lerp(a,b,f);
+	var p1 = lerp(b,c,f);
+	return lerp(p0,p1,f);
+}
+
+function cubicCurve(a,b,c,d,f){
+	var p0 = quadraticCurve(a,b,c,f);
+	var p1 = quadraticCurve(b,c,d,f);
+	return lerp(p0,p1,f);
+}
+
+
 
 class MovingPoint {
 	constructor(startVec, posFunc, speed, oscillate = false) {
@@ -62,6 +48,7 @@ class MovingPoint {
 
 
 //Global variables
+var started = false;
 var movingDotSpeed = 0.005;
 var oscillate = true;
 var staticPoints = [];
@@ -71,17 +58,17 @@ var cubicPoints = [];
 
 function createLinearPosFunc(a, b) {
 	return function (progress) {
-		return Vector.lerp(a, b, progress);
+		return lerp(a, b, progress);
 	}
 }
 function createQuadraticPosFunc(a, b, c) {
 	return function (progress) {
-		return Vector.quadraticCurve(a, b, c, progress);
+		return quadraticCurve(a, b, c, progress);
 	}
 }
 function createCubicPosFunc(a, b, c, d) {
 	return function (progress) {
-		return Vector.cubicCurve(a, b, c, d, progress);
+		return cubicCurve(a, b, c, d, progress);
 	}
 }
 
@@ -113,35 +100,6 @@ function createMovingPoints() {
 	}
 }
 
-//still buggy
-function addMovingPoint() {
-	var lastFour = [];
-	for (var i = 4; i >= 1; i--) {
-		lastFour.push(staticPoints[staticPoints.length - i]);
-	}
-
-	var globalProgress = linearPoints[0].progress; //every point has the same progress at each point in time
-	var newMovingPoint;
-	//linear moving points
-	posFunc = createLinearPosFunc(lastFour[2], lastFour[3]);
-	newMovingPoint = new MovingPoint(posFunc(globalProgress), posFunc, movingDotSpeed, oscillate);
-	newMovingPoint.progress = globalProgress;
-	linearPoints.push(newMovingPoint);
-
-	//quadratic moving points
-	posFunc = createQuadraticPosFunc(lastFour[1], lastFour[2], lastFour[3]);
-	newMovingPoint = new MovingPoint(posFunc(globalProgress), posFunc, movingDotSpeed, oscillate);
-	newMovingPoint.progress = globalProgress;
-	quadraticPoints.push(newMovingPoint);
-
-	//cubic moving points
-	posFunc = createCubicPosFunc(lastFour[0], lastFour[1], lastFour[2], lastFour[3]);
-	newMovingPoint = new MovingPoint(posFunc(globalProgress), posFunc, movingDotSpeed, oscillate);
-	newMovingPoint.progress = globalProgress;
-	cubicPoints.push(newMovingPoint);
-}
-
-
 
 
 //main loop
@@ -158,6 +116,7 @@ function update() {
 }
 
 var staticDotRadius = 20, movingDotRadius = 10;
+var background = "gray";
 var staticDotStyle = "green";
 var linearDotStyle = "blue";
 var quadraticDotStyle = "yellow";
@@ -181,32 +140,49 @@ function drawPoint(point, radius, style) {
 	context.fill();
 }
 
+var segments = [];
+var drawingSegments = true, drawingDots = 1;
 function draw() {
+	context.fillStyle = background;
+	context.fillRect(0, 0, canvas.width, canvas.height)
+
 	//segments
-	context.strokeStyle = strokeStyle;
-	context.lineWidth = lineWidth;
-	if (staticPoints.length > 0) {
-		drawPath(staticPoints);
-	}
-	if (linearPoints.length > 0) {
-		drawPath(linearPoints);
-	}
-	if (quadraticPoints.length > 0) {
-		drawPath(quadraticPoints);
+	if (drawingSegments) {
+		context.lineWidth = lineWidth;
+		context.strokeStyle = staticDotStyle;
+		if (staticPoints.length > 0) {
+			drawPath(staticPoints);
+		}
+		context.strokeStyle = linearDotStyle;
+		if (linearPoints.length > 0) {
+			drawPath(linearPoints);
+		}
+		context.strokeStyle = quadraticDotStyle;
+		if (quadraticPoints.length > 0) {
+			drawPath(quadraticPoints);
+		}
 	}
 
 	//dots
-	for (var i = 0; i < staticPoints.length; i++) {
-		drawPoint(staticPoints[i], staticDotRadius, staticDotStyle);
+	if (drawingDots) {
+		if (drawingDots != -1) {
+			for (var i = 0; i < staticPoints.length; i++) {
+				drawPoint(staticPoints[i], staticDotRadius, staticDotStyle);
+			}
+		}
+		for (var i = 0; i < linearPoints.length; i++) {
+			drawPoint(linearPoints[i], movingDotRadius, linearDotStyle);
+		}
+		for (var i = 0; i < quadraticPoints.length; i++) {
+			drawPoint(quadraticPoints[i], movingDotRadius, quadraticDotStyle);
+		}
+		for (var i = 0; i < cubicPoints.length; i++) {
+			drawPoint(cubicPoints[i], movingDotRadius, cubicDotStyle);
+		}
 	}
-	for (var i = 0; i < linearPoints.length; i++) {
-		drawPoint(linearPoints[i], movingDotRadius, linearDotStyle);
-	}
-	for (var i = 0; i < quadraticPoints.length; i++) {
-		drawPoint(quadraticPoints[i], movingDotRadius, quadraticDotStyle);
-	}
-	for (var i = 0; i < cubicPoints.length; i++) {
-		drawPoint(cubicPoints[i], movingDotRadius, cubicDotStyle);
+
+	if (started) {
+		capturer.capture(canvas);
 	}
 }
 
@@ -237,6 +213,10 @@ function mousedown() {
 
 	if (staticPoints.length >= 4) {
 		createMovingPoints();
+		if (recording && !started) {
+			started = true;
+			capturer.start();
+		}
 	} else if (staticPoints.length > 4) { //adding moving point is still buggy
 		addMovingPoint();
 	}
@@ -246,6 +226,19 @@ function mousemove() {
 	if (boundPoint) {
 		boundPoint.x = mouseX;
 		boundPoint.y = mouseY;
+	}
+}
+
+function keydown(keycode) {
+	if (keycode == 32) {
+		drawingSegments = !drawingSegments;
+	}
+	if (keycode == 13) {
+		if (drawingDots == 1) {
+			drawingDots = -1;
+		} else {
+			drawingDots++;
+		}
 	}
 }
 

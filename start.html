@@ -12,6 +12,20 @@
 </head>
     <body  onload="init()">
 	   <canvas id="canvas-id" width="800" height="600">
+            <script type="text/javascript" src="capture.js"></script>
+            <script type="text/javascript">
+                var recording = false;
+                if (recording) {
+                    var capturer = new CCapture( {
+                        format: 'gif',
+                        framerate: 60,
+                        verbose: true,
+                        motionBlurFrames: true,
+                        display: true,
+                        timeLimit: 10,
+                    } );
+                }
+            </script>
             <script>
             if (endlessCanvas == undefined) {
                 var endlessCanvas = true;
