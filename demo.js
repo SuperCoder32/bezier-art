@@ -1,3 +1,4 @@
+'use strict'
 
 function lerp(a, b, f){
 	return a.add((b.substract(a).multiply(f)));
@@ -15,7 +16,27 @@ function cubicCurve(a,b,c,d,f){
 	return lerp(p0,p1,f);
 }
 
-
+class Vector {
+	constructor(x = 0, y = 0){
+		this.x = x;
+		this.y = y;
+	}
+	add(vec2){
+		return new Vector(this.x + vec2.x, this.y + vec2.y);
+	}
+	substract(vec2){
+		return new Vector(this.x - vec2.x, this.y - vec2.y);
+	}
+	multiply(t){
+		return new Vector(this.x * t, this.y * t);
+	}
+	length() {
+		return Math.sqrt(this.x * this.x + this.y * this.y);
+	}
+	getCopy() {
+		return new Vector(this.x, this.y);
+	}
+}
 
 class MovingPoint {
 	constructor(startVec, posFunc, speed, oscillate = false) {
