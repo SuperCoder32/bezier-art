@@ -143,7 +143,7 @@ var linearDotStyle = "blue";
 var quadraticDotStyle = "yellow";
 var cubicDotStyle = "red";
 var strokeStyle = "black";
-var lineWidth = 5;
+var lineWidth = 2;
 
 function drawPath(points) {
 	context.beginPath();
@@ -170,15 +170,15 @@ function draw() {
 	//segments
 	if (drawingSegments) {
 		context.lineWidth = lineWidth;
-		context.strokeStyle = staticDotStyle;
+		context.strokeStyle = "black";
 		if (staticPoints.length > 0) {
 			drawPath(staticPoints);
 		}
-		context.strokeStyle = linearDotStyle;
+		context.strokeStyle = "black";
 		if (linearPoints.length > 0) {
 			drawPath(linearPoints);
 		}
-		context.strokeStyle = quadraticDotStyle;
+		context.strokeStyle = "black";
 		if (quadraticPoints.length > 0) {
 			drawPath(quadraticPoints);
 		}
@@ -213,6 +213,10 @@ function draw() {
 //User interaction logic
 var boundPoint = null;
 function mousedown() {
+	if (!(mouseX > 0 && mouseX < canvas.width && mouseY > 0 && mouseY < canvas.height)) {
+		return;
+	}
+
 	//placing a point
 	if (boundPoint) {
 		boundPoint = null;
@@ -251,6 +255,7 @@ function mousemove() {
 }
 
 function keydown(keycode) {
+	console.log(keycode);
 	if (keycode == 32) {
 		drawingSegments = !drawingSegments;
 	}
@@ -263,3 +268,70 @@ function keydown(keycode) {
 	}
 }
 
+
+
+
+//Infinite Shapes Logic
+function infiniteShape(n, radius, depth, ratio) {
+	let vertices = regularPolygon(n, radius);
+
+	for (var i = 0; i < depth; i++) {
+		vertices.push(lerp(
+			vertices[vertices.length - n],
+			vertices[vertices.length - n + 1],
+			ratio
+		));
+	}
+
+	return vertices;
+}
+
+function toRadians(degrees) {
+	return degrees * Math.PI / 180;
+}
+
+function regularPolygon(n, radius) {
+	let totalDegrees = (n - 3) * 180 + 180;
+	let singleAngle = toRadians(360 / n);
+
+	let origin = new Vector(canvas.width / 2, canvas.height / 2);
+
+	let result = [];
+	result.push(new Vector(origin.x + radius, origin.y + 0));
+	for (var i = 1; i <= n; i++) {
+		let offsetX = Math.cos(singleAngle * i) * radius;
+		let offsetY = - Math.sin(singleAngle * i) * radius;
+		result.push(new Vector(origin.x + offsetX, origin.y + offsetY));
+	}
+	
+	return result;
+}
+
+function createInfiniteShape(n, radius, depth, ratio) {
+	staticPoints = infiniteShape(n, radius, depth, ratio);
+	createMovingPoints();
+}
+
+
+
+
+//User interaction for infinite shapes
+var VC = document.getElementById("verticesCount");
+var RAD = document.getElementById("radius");
+var D = document.getElementById("depth");
+var RAT = document.getElementById("ratio");
+
+var IS_verticesCount = parseInt(VC.value);
+var IS_radiusLength = parseFloat(RAD.value);
+var IS_depth = parseInt(D.value);
+var IS_ratio = parseFloat(RAT.value);
+
+VC.addEventListener("change", function () {IS_verticesCount = parseInt(VC.value)});
+RAD.addEventListener("change", function () {IS_radiusLength = parseFloat(RAD.value)});
+D.addEventListener("change", function () {IS_depth = parseInt(D.value)});
+RAT.addEventListener("change", function () {IS_ratio = parseFloat(RAT.value)});
+
+var startButton = document.getElementById("creation");
+startButton.addEventListener("click", function () {
+	createInfiniteShape(IS_verticesCount, IS_radiusLength, IS_depth, IS_ratio);
+});

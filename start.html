@@ -4,14 +4,41 @@
     <style>
         body,
         canvas {
-            margin: 0;
+            margin: 0 0 0 200px;
             padding: 0;
             overflow: hidden;
+            position: fixed;
+            top: 0;
+        }
+        input {
+            float: left;
+        }
+        div {
+            text-align: center;
         }
     </style>
 </head>
     <body  onload="init()">
-	   <canvas id="canvas-id" width="800" height="600">
+        <label>
+            <div>Reg polygon vertex count:</div>
+            <input placeholder="" type="number" id="verticesCount" value="3">
+        </label>
+        <label>
+            <div>Radius(px) of regular polygon:</div>
+            <input type="number" id="radius" value="300">
+        </label>
+        <label>
+            <div>The depth of the vortex:</div>
+            <input type="number" id="depth" value="25">
+        </label>
+        <label>
+            <div>Ratio:</div>
+            <input type="number" id="ratio" value="0.125">
+        </label>
+        <br>
+        <button id="creation">Create Vortex</button>
+
+	    <canvas id="canvas-id" width="800" height="600">
             <script type="text/javascript" src="capture.js"></script>
             <script type="text/javascript">
                 var recording = false;
@@ -28,7 +55,7 @@
             </script>
             <script>
             if (endlessCanvas == undefined) {
-                var endlessCanvas = true;
+                var endlessCanvas = false;
             }
             var canvas = document.getElementById("canvas-id");
             if (endlessCanvas) {
@@ -40,8 +67,8 @@
                 };
             }
             else {
-                canvas.width = 800;
-                canvas.height = 600;
+                canvas.width = 1000;
+                canvas.height = 800;
             }
             var context = canvas.getContext("2d");
             context.fillStyle = "#0000ff";
