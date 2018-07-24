@@ -335,3 +335,19 @@ var startButton = document.getElementById("creation");
 startButton.addEventListener("click", function () {
 	createInfiniteShape(IS_verticesCount, IS_radiusLength, IS_depth, IS_ratio);
 });
+
+function getData() {
+	return JSON.stringify(staticPoints);
+}
+
+function loadData(dots) {
+	dots = JSON.parse(dots);
+	staticPoints = [];
+	for (var i = 0; i < dots.length; i++) {
+		var p = dots[i];
+		var x = p.x;
+		var y = p.y;
+		staticPoints.push( new Vector(x, y) );
+	}
+	createMovingPoints();
+}
