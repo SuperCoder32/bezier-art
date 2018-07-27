@@ -69,7 +69,7 @@ class MovingPoint {
 
 
 //Global variables
-var started = false;
+var recording = false;
 var movingDotSpeed = 0.005;
 var oscillate = true;
 var staticPoints = [];
@@ -137,12 +137,12 @@ function update() {
 }
 
 var staticDotRadius = 20, movingDotRadius = 10;
-var background = "gray";
-var staticDotStyle = "green";
-var linearDotStyle = "blue";
-var quadraticDotStyle = "yellow";
-var cubicDotStyle = "red";
-var strokeStyle = "black";
+var background = 'gray';
+var staticDotStyle = 'green';
+var linearDotStyle = 'blue';
+var quadraticDotStyle = 'yellow';
+var cubicDotStyle = 'red';
+var strokeStyle = 'black';
 var lineWidth = 2;
 
 function drawPath(points) {
@@ -161,8 +161,46 @@ function drawPoint(point, radius, style) {
 	context.fill();
 }
 
+
+//gif compilation logic
+var gif, gifs = 0; 
+var msgEl = document.createElement('p');
+msgEl.textContent = 'Compiling GIF';
+var msgBoard = document.querySelector('#msgboard');
+
+function preview(blob) {
+    msgEl.remove();
+    var objurl = URL.createObjectURL(blob); 
+
+    var link = document.createElement('a');
+    link.setAttribute('href', objurl);
+    link.setAttribute('target', '_blank');
+    link.textContent = `See GIF ${gifs+1}`;
+
+    msgBoard.appendChild(link);
+    var br = document.createElement('br');
+    msgBoard.appendChild(br);
+
+    gifs++;
+    prevMoment = null;
+}
+
+var prevMoment;
+function recordFrame() {
+    var currMoment = Date.now();
+    if (!prevMoment) {
+        prevMoment = currMoment;
+    }
+    var delay = currMoment - prevMoment;
+    delay *= 4;
+    gif.addFrame(canvas, {delay: delay});
+    prevMoment = currMoment;
+}
+
+//draw function
 var segments = [];
 var drawingSegments = true, drawingDots = 1;
+
 function draw() {
 	context.fillStyle = background;
 	context.fillRect(0, 0, canvas.width, canvas.height)
@@ -170,15 +208,15 @@ function draw() {
 	//segments
 	if (drawingSegments) {
 		context.lineWidth = lineWidth;
-		context.strokeStyle = "black";
+		context.strokeStyle = 'black';
 		if (staticPoints.length > 0) {
 			drawPath(staticPoints);
 		}
-		context.strokeStyle = "black";
+		context.strokeStyle = 'black';
 		if (linearPoints.length > 0) {
 			drawPath(linearPoints);
 		}
-		context.strokeStyle = "black";
+		context.strokeStyle = 'black';
 		if (quadraticPoints.length > 0) {
 			drawPath(quadraticPoints);
 		}
@@ -202,8 +240,8 @@ function draw() {
 		}
 	}
 
-	if (started) {
-		capturer.capture(canvas);
+	if (recording) {
+        recordFrame();
 	}
 }
 
@@ -238,11 +276,7 @@ function mousedown() {
 
 	if (staticPoints.length >= 4) {
 		createMovingPoints();
-		if (recording && !started) {
-			started = true;
-			capturer.start();
-		}
-	} else if (staticPoints.length > 4) { //adding moving point is still buggy
+	} else if (staticPoints.length > 4) { 
 		addMovingPoint();
 	}
 }
@@ -255,7 +289,6 @@ function mousemove() {
 }
 
 function keydown(keycode) {
-	console.log(keycode);
 	if (keycode == 32) {
 		drawingSegments = !drawingSegments;
 	}
@@ -315,33 +348,58 @@ function createInfiniteShape(n, radius, depth, ratio) {
 
 
 
-//User interaction for infinite shapes
-var VC = document.getElementById("verticesCount");
-var RAD = document.getElementById("radius");
-var D = document.getElementById("depth");
-var RAT = document.getElementById("ratio");
+//User interaction 
+var VC = document.getElementById('verticesCount');
+var RAD = document.getElementById('radius');
+var D = document.getElementById('depth');
+var RAT = document.getElementById('ratio');
 
 var IS_verticesCount = parseInt(VC.value);
 var IS_radiusLength = parseFloat(RAD.value);
 var IS_depth = parseInt(D.value);
 var IS_ratio = parseFloat(RAT.value);
 
-VC.addEventListener("change", function () {IS_verticesCount = parseInt(VC.value)});
-RAD.addEventListener("change", function () {IS_radiusLength = parseFloat(RAD.value)});
-D.addEventListener("change", function () {IS_depth = parseInt(D.value)});
-RAT.addEventListener("change", function () {IS_ratio = parseFloat(RAT.value)});
+VC.addEventListener('change', function () {IS_verticesCount = parseInt(VC.value)});
+RAD.addEventListener('change', function () {IS_radiusLength = parseFloat(RAD.value)});
+D.addEventListener('change', function () {IS_depth = parseInt(D.value)});
+RAT.addEventListener('change', function () {IS_ratio = parseFloat(RAT.value)});
 
-var startButton = document.getElementById("creation");
-startButton.addEventListener("click", function () {
+var startButton = document.getElementById('creation');
+startButton.addEventListener('click', function () {
 	createInfiniteShape(IS_verticesCount, IS_radiusLength, IS_depth, IS_ratio);
 });
 
-function getData() {
-	return JSON.stringify(staticPoints);
+var recButton = document.getElementById('rec');
+var stopButton = document.getElementById('stop');
+
+recButton.addEventListener('click', function (ev) {
+    stopButton.style.display = 'block';
+	ev.target.style.display = 'none';
+    gif = new GIF({
+        workers: 2,
+        quality: 10
+    });
+    gif.on('finished', preview);
+	recording = true;	
+});
+
+
+stopButton.addEventListener('click', function (ev) {
+	recButton.style.display = 'block';
+	ev.target.style.display = 'none';
+    msgBoard.appendChild(msgEl);
+	recording = false;
+	gif.render();
+});
+
+var storage = window.localStorage;
+
+function saveData(save) {
+	storage.setItem(save, JSON.stringify(staticPoints));
 }
 
-function loadData(dots) {
-	dots = JSON.parse(dots);
+function loadData(save) {
+	var dots = JSON.parse(storage.getItem(save));
 	staticPoints = [];
 	for (var i = 0; i < dots.length; i++) {
 		var p = dots[i];
@@ -351,3 +409,40 @@ function loadData(dots) {
 	}
 	createMovingPoints();
 }
+
+function deleteSave(save) {
+    storage.removeItem(save);
+    loadSavesList();
+}
+
+var savesList = document.querySelector('#savesboard > ol');
+
+function appendSave(save) {
+    var item = document.createElement('li');
+    var loadButton = document.createElement('button');
+    var delButton = document.createElement('button');
+    loadButton.setAttribute('onclick', `loadData('${save}')`);
+    delButton.setAttribute('onclick', `deleteSave('${save}')`);
+    loadButton.textContent = save;
+    delButton.textContent = 'Delete';
+
+    item.appendChild(loadButton);
+    item.appendChild(delButton);
+    savesList.appendChild(item);
+}
+
+function loadSavesList() {
+    savesList.innerHTML = '';
+    for (var i = 0; i < storage.length; i++) {
+        var save = storage.key(i);
+        appendSave(save);
+    }
+}
+
+document.querySelector('#save').addEventListener('click', function () {
+    var save = document.querySelector('#savename').value;
+    saveData(save);
+    appendSave(save);
+});
+
+loadSavesList();

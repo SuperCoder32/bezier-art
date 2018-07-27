@@ -1,0 +1,9 @@
+input {
+    float: left;
+}
+div#msgboard {
+    align-content: left;
+}
+p {
+    margin: 10px;
+}
